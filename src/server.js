@@ -8,9 +8,7 @@ import {
   InteractionType,
   verifyKey,
 } from 'discord-interactions';
-import { AWW_COMMAND, INVITE_COMMAND } from './commands.js';
-import { getCuteUrl } from './reddit.js';
-import { InteractionResponseFlags } from 'discord-interactions';
+import { PULL_COMMAND } from './commands.js';
 
 class JsonResponse extends Response {
   constructor(body, init) {
@@ -25,6 +23,35 @@ class JsonResponse extends Response {
 }
 
 const router = AutoRouter();
+
+const url = 'https://en.wikipedia.org/wiki/Special:Random';
+
+// Map to store last pull timestamp for each server
+const lastPullTimestamps = new Map();
+
+function updateLastPullTimestamp(guildId, userId) {
+  let guildMap = lastPullTimestamps.get(guildId);
+  if (!guildMap) {
+    guildMap = new Map();
+    lastPullTimestamps.set(guildId, guildMap);
+  }
+  guildMap.set(userId, Date.now());
+}
+
+function hasReachedDailyLimit(guildId, userId) {
+  const guildMap = lastPullTimestamps.get(guildId);
+  if (!guildMap) {
+    return false;
+  }
+  const lastPullTimestamp = guildMap.get(userId);
+  if (!lastPullTimestamp) {
+    return false;
+  }
+
+  const now = new Date();
+  const lastPullDate = new Date(lastPullTimestamp);
+  return now.toDateString() === lastPullDate.toDateString();
+}
 
 /**
  * A simple :wave: hello page to verify the worker is working.
@@ -58,23 +85,29 @@ router.post('/', async (request, env) => {
   if (interaction.type === InteractionType.APPLICATION_COMMAND) {
     // Most user commands will come as `APPLICATION_COMMAND`.
     switch (interaction.data.name.toLowerCase()) {
-      case AWW_COMMAND.name.toLowerCase(): {
-        const cuteUrl = await getCuteUrl();
-        return new JsonResponse({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: cuteUrl,
-          },
+      case PULL_COMMAND.name.toLowerCase(): {
+        const { guild_id, member } = interaction;
+        // return warning if already pulled
+        if (hasReachedDailyLimit(guild_id, member.user.id)) {
+          return new JsonResponse({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: `You have already pulled a Wikipedia page today, <@${member.user.id}>. Try again tomorrow!`,
+            },
+          });
+        }
+
+        const response = await fetch(url, {
+          method: 'HEAD',
+          redirect: 'follow',
         });
-      }
-      case INVITE_COMMAND.name.toLowerCase(): {
-        const applicationId = env.DISCORD_APPLICATION_ID;
-        const INVITE_URL = `https://discord.com/oauth2/authorize?client_id=${applicationId}&scope=applications.commands`;
+
+        updateLastPullTimestamp(guild_id, member.user.id);
+
         return new JsonResponse({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: INVITE_URL,
-            flags: InteractionResponseFlags.EPHEMERAL,
+            content: `<@${member.user.id}> pulled\n${response.url}`,
           },
         });
       }
