@@ -1,7 +1,7 @@
 {
-  "name": "awwbot",
+  "name": "wiki-bot",
   "version": "1.0.0",
-  "description": "A simple discord bot that uses intents to post pictures from r/aww",
+  "description": "A simple discord bot that queries the Wikipedia random endpoint",
   "type": "module",
   "private": true,
   "main": "src/server.js",

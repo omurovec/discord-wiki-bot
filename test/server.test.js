@@ -8,7 +8,6 @@ import {
 import { AWW_COMMAND, INVITE_COMMAND } from '../src/commands.js';
 import sinon from 'sinon';
 import server from '../src/server.js';
-import { redditUrl } from '../src/reddit.js';
 
 describe('Server', () => {
   describe('GET /', () => {
@@ -79,11 +78,9 @@ describe('Server', () => {
         interaction: interaction,
       });
 
-      // mock the fetch call to reddit
       const result = sinon
         // eslint-disable-next-line no-undef
         .stub(global, 'fetch')
-        .withArgs(redditUrl)
         .resolves({
           status: 200,
           ok: true,
