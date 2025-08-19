@@ -100,6 +100,13 @@ router.post('/', async (request, env) => {
         const response = await fetch(url, {
           method: 'HEAD',
           redirect: 'follow',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'User-Agent': 'DiscordBot',
+            Accept: '*/*',
+            'Accept-Encoding': 'gzip, deflate, br',
+            Connection: 'keep-alive',
+          },
         });
 
         updateLastPullTimestamp(guild_id, member.user.id);

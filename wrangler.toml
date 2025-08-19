@@ -2,6 +2,10 @@ name = "wiki-bot"
 main = "./src/server.js"
 compatibility_date="2023-05-18"
 
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 # [secrets]
 # DISCORD_TOKEN
 # DISCORD_PUBLIC_KEY
